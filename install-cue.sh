@@ -3,26 +3,23 @@
 set -eu
 set -o pipefail
 
-
 OS="$(uname -s | tr '[:upper:]' '[:lower:]')"
 ARCH="$(uname -m)"
 
-if [ "${ARCH}" == x86_64 ]; then
+if [ "${ARCH}" == "x86_64" ]; then
   ARCH=amd64
 fi
 
-PACKAGE_NAME=flux
-VERSION=0.41.2
+PACKAGE_NAME=cue
+VERSION=0.5.0
 
-URL="https://github.com/fluxcd/flux2/releases/download/v${VERSION}/flux_${VERSION}_${OS}_${ARCH}.tar.gz"
-SHA="13f5ab2a93812c26c6b921274c40451d1b29a259da4e9c4d38b112cc4dad562a"
+URL="https://github.com/cue-lang/cue/releases/download/v${VERSION}/cue_v${VERSION}_${OS}_${ARCH}.tar.gz"
+SHA="$(jq -r ".${OS}.${ARCH}" ${PACKAGE_NAME}-shas.json)"
 SHA_ALG=256
 
-BIN_DIR="${HOME}/local/bin"
-TARGET_DIR="${HOME}/local/out/${PACKAGE_NAME}-${VERSION}"
 TEMP_DIR="${HOME}/temp/builds/build-${PACKAGE_NAME}-${VERSION}-$(date +"%Y%m%d%H%M%S")"
-mkdir -p "${TEMP_DIR}"
-
+TARGET_DIR="${HOME}/local/out/${PACKAGE_NAME}-${VERSION}"
+BIN_DIR="${HOME}/local/bin"
 
 echo "OS: ${OS}"
 echo "ARCH: ${ARCH}"
@@ -31,11 +28,12 @@ echo "VERSION: ${VERSION}"
 echo "URL: ${URL}"
 echo "SHA: ${SHA}"
 echo "SHA_ALG: ${SHA_ALG}"
-echo "TARGET_DIR: ${TARGET_DIR}"
 echo "TEMP_DIR: ${TEMP_DIR}"
+echo "TARGET_DIR: ${TARGET_DIR}"
+echo "BIN_DIR: ${BIN_DIR}"
+
 
 cleanup() {
-  echo "cleanup"
   rm -rf "${TEMP_DIR}"
 }
 
@@ -50,16 +48,12 @@ mkdir -p "${TARGET_DIR}"
 
 curl -sSL -o "${TEMP_DIR}/package.tar.gz" "${URL}"
 cd "${TEMP_DIR}"
-tar xf "${TEMP_DIR}/package.tar.gz"
+tar xzf "${TEMP_DIR}/package.tar.gz"
 
 echo "${SHA}  ${TEMP_DIR}/package.tar.gz" > "${TEMP_DIR}/sha.sum"
 cat "${TEMP_DIR}/sha.sum"
 ls
 shasum -a "${SHA_ALG}" -c "${TEMP_DIR}/sha.sum"
 
-mkdir -p "${TARGET_DIR}/bin"
-mv "${PACKAGE_NAME}" "${TARGET_DIR}/bin/${PACKAGE_NAME}"
-
-ls "${TARGET_DIR}/bin" | while read -r exe; do
-  ln -fs "${TARGET_DIR}/bin/${exe}" "${BIN_DIR}/${exe}"
-done
+mv "${TEMP_DIR}/cue" "${TARGET_DIR}/cue"
+ln -fs "${TARGET_DIR}/cue" "${BIN_DIR}/cue"
